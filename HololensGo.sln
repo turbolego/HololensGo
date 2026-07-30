@@ -1,1 +1,24 @@
-﻿
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37216.2 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HololensGo", "HololensGo.csproj", "{AF7F64BB-A830-41E1-BF39-AB081CE6CA8D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AF7F64BB-A830-41E1-BF39-AB081CE6CA8D}.Debug|x86.ActiveCfg = Debug|x86
+		{AF7F64BB-A830-41E1-BF39-AB081CE6CA8D}.Debug|x86.Build.0 = Debug|x86
+		{AF7F64BB-A830-41E1-BF39-AB081CE6CA8D}.Release|x86.ActiveCfg = Release|x86
+		{AF7F64BB-A830-41E1-BF39-AB081CE6CA8D}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {81533D50-D2DA-4473-B040-A6D6A6C5AA35}
+	EndGlobalSection
+EndGlobal

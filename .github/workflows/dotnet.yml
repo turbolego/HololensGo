@@ -1,6 +1,14 @@
+# Compile check: verifies the UWP project builds on both configurations.
+# Packaging and signing are disabled so no certificate is required.
+# For the signed .appx artifact see dotnet-desktop.yml.
+
 name: UWP Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -11,31 +19,32 @@ jobs:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-    - name: NuGet restore
-      run: nuget restore HololensGo.sln
+      - name: NuGet restore
+        run: nuget restore HololensGo.sln
 
-    - name: Install Windows 10 SDK + UWP MSBuild
-      shell: powershell
-      run: |
-        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        $vsPath = & $vswhere -latest -products * -property installationPath
-        $installer = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
-        & $installer modify `
-          --installPath "$vsPath" `
-          --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
-          --add Microsoft.VisualStudio.ComponentGroup.UWP.MSBuild `
-          --quiet --norestart --force
+      - name: Install Windows 10 SDK 19041 and UWP MSBuild tools
+        shell: powershell
+        run: |
+          $vswhere   = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath    = & $vswhere -latest -products * -property installationPath
+          $installer = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+          & $installer modify `
+            --installPath "$vsPath" `
+            --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
+            --add Microsoft.VisualStudio.ComponentGroup.UWP.MSBuild `
+            --quiet --norestart --force
+          if ($LASTEXITCODE -notin @(0, 3010)) { exit $LASTEXITCODE }
 
-    - name: Build (${{ matrix.configuration }})
-      run: >
-        msbuild HololensGo.csproj
-        /p:Configuration=${{ matrix.configuration }}
-        /p:Platform=x86
-        /p:AppxPackageSigningEnabled=false
-        /p:GenerateAppxPackageOnBuild=false
-        /v:minimal
+      - name: Build ${{ matrix.configuration }} | x86
+        run: >
+          msbuild HololensGo.csproj /m
+          /p:Configuration=${{ matrix.configuration }}
+          /p:Platform=x86
+          /p:AppxPackageSigningEnabled=false
+          /p:GenerateAppxPackageOnBuild=false

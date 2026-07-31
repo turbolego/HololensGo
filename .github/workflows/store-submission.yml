@@ -43,10 +43,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
 
       - name: NuGet restore
         run: nuget restore HololensGo.sln
@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload WACK report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: WACK-Report
           path: |
@@ -133,7 +133,7 @@ jobs:
       # ── Upload app package as artifact ───────────────────────────────
       - name: Upload appxupload artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: HololensGo-${{ github.sha }}-Store-x86
           path: |
@@ -150,7 +150,7 @@ jobs:
         if: >
           (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'submit')
           || github.event_name == 'push'
-        uses: microsoft/microsoft-store-apppublisher@v1.1
+        uses: microsoft/microsoft-store-apppublisher@v1.4
 
       - name: Reconfigure store credentials
         if: >

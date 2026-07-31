@@ -14,7 +14,7 @@ namespace HololensGo
     /// </summary>
     internal class AppView : IFrameworkView, IDisposable
     {
-        private HolographicTemplateAppMain main;
+        private HololensGoMain main;
 
         private DeviceResources         deviceResources;
         private bool                    windowClosed        = false;
@@ -61,7 +61,7 @@ namespace HololensGo
             // resources.
             deviceResources = new DeviceResources();
 
-            main = new HolographicTemplateAppMain(deviceResources);
+            main = new HololensGoMain(deviceResources);
         }
 
         /// <summary>

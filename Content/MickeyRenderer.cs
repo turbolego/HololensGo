@@ -288,15 +288,15 @@ namespace HololensGo.Content
             // Vertices
             for (int lat = 0; lat <= latBands; lat++)
             {
-                float theta = lat * MathF.PI / latBands;
-                float sinTheta = MathF.Sin(theta);
-                float cosTheta = MathF.Cos(theta);
+                float theta = lat * Pi / latBands;
+                float sinTheta = Sin(theta);
+                float cosTheta = Cos(theta);
 
                 for (int lon = 0; lon <= lonBands; lon++)
                 {
-                    float phi = lon * 2f * MathF.PI / lonBands;
-                    float sinPhi = MathF.Sin(phi);
-                    float cosPhi = MathF.Cos(phi);
+                    float phi = lon * 2f * Pi / lonBands;
+                    float sinPhi = Sin(phi);
+                    float cosPhi = Cos(phi);
 
                     vertices.Add(new VertexPositionColor(
                         center + new Vector3(
@@ -356,9 +356,9 @@ namespace HololensGo.Content
             int bottomRimStart = vertices.Count;
             for (int i = 0; i <= segments; i++)
             {
-                float angle = i * 2f * MathF.PI / segments;
-                float x = MathF.Cos(angle) * radius;
-                float z = MathF.Sin(angle) * radius;
+                float angle = i * 2f * Pi / segments;
+                float x = Cos(angle) * radius;
+                float z = Sin(angle) * radius;
                 vertices.Add(new VertexPositionColor(
                     bottomCenter + new Vector3(x, 0, z), color));
             }
@@ -367,9 +367,9 @@ namespace HololensGo.Content
             int topRimStart = vertices.Count;
             for (int i = 0; i <= segments; i++)
             {
-                float angle = i * 2f * MathF.PI / segments;
-                float x = MathF.Cos(angle) * radius;
-                float z = MathF.Sin(angle) * radius;
+                float angle = i * 2f * Pi / segments;
+                float x = Cos(angle) * radius;
+                float z = Sin(angle) * radius;
                 vertices.Add(new VertexPositionColor(
                     topCenter + new Vector3(x, 0, z), color));
             }
@@ -475,15 +475,15 @@ namespace HololensGo.Content
             // Generate torus vertices
             for (int i = 0; i <= segments; i++)
             {
-                float phi = i * 2f * MathF.PI / segments;
-                float cosPhi = MathF.Cos(phi);
-                float sinPhi = MathF.Sin(phi);
+                float phi = i * 2f * Pi / segments;
+                float cosPhi = Cos(phi);
+                float sinPhi = Sin(phi);
 
                 for (int j = 0; j <= tubeSegs; j++)
                 {
-                    float theta = j * 2f * MathF.PI / tubeSegs;
-                    float cosTheta = MathF.Cos(theta);
-                    float sinTheta = MathF.Sin(theta);
+                    float theta = j * 2f * Pi / tubeSegs;
+                    float cosTheta = Cos(theta);
+                    float sinTheta = Sin(theta);
 
                     // Torus: (R + r*cos(theta)) * cos(phi),  r*sin(theta),  (R + r*cos(theta)) * sin(phi)
                     float rCosT = thickness * cosTheta;
@@ -514,5 +514,11 @@ namespace HololensGo.Content
                 }
             }
         }
+
+        private const float Pi = (float)Math.PI;
+
+        private static float Sin(float value) => (float)Math.Sin(value);
+
+        private static float Cos(float value) => (float)Math.Cos(value);
     }
 }

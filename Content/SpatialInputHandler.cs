@@ -4,7 +4,7 @@ namespace HololensGo.Common
 {
     // Sample gesture handler.
     // Hooks up events to recognize a tap gesture, and keeps track of input using a boolean value.
-    public class SpatialInputHandler
+    public class SpatialInputHandler : System.IDisposable
     {
         // API objects used to process gesture input, and generate gesture events.
         private SpatialInteractionManager interactionManager;
@@ -40,12 +40,19 @@ namespace HololensGo.Common
 
         public void OnSourcePressed(SpatialInteractionManager sender, SpatialInteractionSourceEventArgs args)
         {
+            // Keep only the latest press; the main loop consumes it once per update.
             sourceState = args.State;
+        }
 
-            //
-            // TODO: In your app or game engine, rewrite this method to queue
-            //       input events in your input class or event handler.
-            //
+        public void Dispose()
+        {
+            if (interactionManager != null)
+            {
+                interactionManager.SourcePressed -= this.OnSourcePressed;
+                interactionManager = null;
+            }
+
+            sourceState = null;
         }
     }
 }

@@ -30,16 +30,17 @@ namespace HololensGo
 
         public void Dispose()
         {
-            if (deviceResources != null)
-            {
-                deviceResources.Dispose();
-                deviceResources = null;
-            }
-
+            // Release scene resources before tearing down their Direct3D owner.
             if (main != null)
             {
                 main.Dispose();
                 main = null;
+            }
+
+            if (deviceResources != null)
+            {
+                deviceResources.Dispose();
+                deviceResources = null;
             }
         }
 
@@ -139,6 +140,7 @@ namespace HololensGo
         /// </summary>
         public void Uninitialize()
         {
+            Dispose();
         }
 
         #endregion

@@ -51,6 +51,20 @@ public class PotatoTests
     }
 
     [TestMethod]
+    public void Tick_AdvancesProjectileSpinUsingTravelSpeed()
+    {
+        var potato = new Potato
+        {
+            Velocity = new Vector3(0f, 10f, 0f)
+        };
+
+        potato.Tick(0.25f);
+
+        Assert.IsTrue(potato.SpinRadians > 0f);
+        Assert.IsTrue(potato.SpinRadians < 6.2831853f);
+    }
+
+    [TestMethod]
     public void HasExpired_IsTrueOnlyWhenLifetimeGreaterThanFive()
     {
         var potato = new Potato { Lifetime = 5.0f };

@@ -40,8 +40,15 @@ namespace HololensGo
         // Spawns a procedural potato mesh to render active projectiles
         private PotatoRenderer potatoRenderer;
 
-        // Active projectiles (thrown potatoes)
-        private List<Potato> potatoes = new List<Potato>();
+        // Renderer-independent rules, scoring, projectile simulation, and respawns.
+        private readonly GameSession gameSession = new GameSession
+        {
+            TargetDriftRadiusMeters = 0.18f,
+            TargetBobHeightMeters = 0.06f,
+            TargetDriftRadiansPerSecond = 1.05f
+        };
+        private SpatialInputHandler spatialInputHandler;
+        private SpatialPointerPose latestHeadPose;
 #endif
 
         // Cached reference to device resources.
@@ -55,6 +62,7 @@ namespace HololensGo
 
         // Stationary reference frame (origin at startup position).
         SpatialStationaryFrameOfReference stationaryReferenceFrame;
+        private SpatialLocator spatialLocator;
 
         // For debugging: world-space coords of the user's start location
         private Vector3 worldOrigin = Vector3.Zero;
@@ -85,6 +93,7 @@ namespace HololensGo
 
         // ── Mickey position (room-space) ──
         private Vector3 mickeyWorldPos = Vector3.Zero;
+        private float mickeyFloorHeight = 0f;
         private bool mickeyPlaced = false;
         private float timeSinceStart = 0f;
         private const float SECONDS_BEFORE_SPAWN = 3.0f;
@@ -121,7 +130,10 @@ namespace HololensGo
             this.holographicSpace = holographicSpace;
 
 #if DRAW_SAMPLE_CONTENT
+            spatialInputHandler = new SpatialInputHandler();
             mickeyRenderer = new MickeyRenderer(deviceResources);
+            // Do not show the target at the stationary-frame origin before the spawn delay.
+            mickeyRenderer.IsVisible = false;
             potatoRenderer = new PotatoRenderer(deviceResources);
 #endif
 
@@ -138,7 +150,34 @@ namespace HololensGo
 
         public void Dispose()
         {
+            Gamepad.GamepadAdded -= this.OnGamepadAdded;
+            Gamepad.GamepadRemoved -= this.OnGamepadRemoved;
+
+            if (canGetDefaultHolographicDisplay)
+            {
+                HolographicSpace.IsAvailableChanged -= this.OnHolographicDisplayIsAvailableChanged;
+            }
+
+            if (holographicSpace != null)
+            {
+                holographicSpace.CameraAdded -= this.OnCameraAdded;
+                holographicSpace.CameraRemoved -= this.OnCameraRemoved;
+                holographicSpace = null;
+            }
+
+            if (spatialLocator != null)
+            {
+                spatialLocator.LocatabilityChanged -= this.OnLocatabilityChanged;
+                spatialLocator = null;
+            }
+
 #if DRAW_SAMPLE_CONTENT
+            if (spatialInputHandler != null)
+            {
+                spatialInputHandler.Dispose();
+                spatialInputHandler = null;
+            }
+
             if (mickeyRenderer != null)
             {
                 mickeyRenderer.Dispose();
@@ -174,7 +213,13 @@ namespace HololensGo
 #if DRAW_SAMPLE_CONTENT
             if (stationaryReferenceFrame != null)
             {
-                // Check gamepad (A = throw)
+                if (spatialInputHandler != null && spatialInputHandler.CheckForInput() != null)
+                {
+                    pointerPressed = true;
+                }
+
+                // Check gamepad (A = throw). Pointer and gesture input share the same
+                // queued request so every input source follows identical game rules.
                 for (int i = 0; i < gamepads.Count; ++i)
                 {
                     bool aDown = (gamepads[i].gamepad.GetCurrentReading().Buttons & GamepadButtons.A) == GamepadButtons.A;
@@ -185,17 +230,17 @@ namespace HololensGo
                     gamepads[i].buttonAWasPressedLastFrame = aDown;
                 }
 
+                // Obtain one predicted pose per update. DoThrow receives this pose instead
+                // of creating a second holographic frame mid-update.
+                headPose = SpatialPointerPose.TryGetAtTimestamp(
+                    stationaryReferenceFrame.CoordinateSystem, prediction.Timestamp);
+                latestHeadPose = headPose;
+
                 if (pointerPressed)
                 {
                     pointerPressed = false;
-                    DoThrow();
+                    DoThrow(headPose);
                 }
-
-                // Always obtain the current head pose every frame.
-                // SpatialPointerPose.TryGetAtTimestamp reads directly from the
-                // prediction and is always valid while positional tracking is active.
-                headPose = SpatialPointerPose.TryGetAtTimestamp(
-                    stationaryReferenceFrame.CoordinateSystem, prediction.Timestamp);
             }
 #endif
 
@@ -214,30 +259,43 @@ namespace HololensGo
                     }
                 }
 
-                // Advance each potato projectile
                 float dt = (float)timer.ElapsedSeconds;
-                for (int i = potatoes.Count - 1; i >= 0; i--)
+                if (spatialTrackingActive)
                 {
-                    potatoes[i].Tick(dt);
-
-                    // Collision check: if within hit radius of Mickey
-                    if (!potatoes[i].HasCollided && mickeyPlaced)
+                    // GameSession uses fixed substeps, swept collisions, a projectile budget,
+                    // floor bounces, score/combo tracking, and a short target respawn interval.
+                    GameUpdateResult updateResult = gameSession.Update(dt, worldOrigin, mickeyFloorHeight);
+                    if (gameSession.TargetVisible)
                     {
-                        if (Vector3.Distance(potatoes[i].Position, mickeyWorldPos) < 0.15f)
+                        mickeyWorldPos = gameSession.TargetPosition;
+                        if (mickeyRenderer != null)
                         {
-                            potatoes[i].HasCollided = true;
-                            // Mark successful hit on renderer
-                            if (mickeyRenderer != null)
-                                mickeyRenderer.IsHit = true;
+                            mickeyRenderer.Position = mickeyWorldPos;
                         }
                     }
 
-                    // Remove expired or out-of-range projectiles
-                    if (potatoes[i].HasExpired
-                        || Vector3.Distance(potatoes[i].Position, worldOrigin) > 20f)
+                    if (updateResult.TargetRespawned && latestHeadPose != null)
                     {
-                        potatoes.RemoveAt(i);
+                        // Respawn against the player's latest gaze so the next throw begins
+                        // as a fresh room-scale encounter instead of at a stale location.
+                        PlaceMickey(latestHeadPose);
                     }
+
+                    if (mickeyRenderer != null)
+                    {
+                        if (updateResult.TargetHit)
+                        {
+                            mickeyRenderer.TriggerHit();
+                        }
+
+                        mickeyRenderer.IsVisible = gameSession.TargetVisible;
+                        mickeyRenderer.Update(dt);
+                    }
+                }
+                else if (mickeyRenderer != null)
+                {
+                    // Do not render or simulate world-locked content without a valid pose.
+                    mickeyRenderer.IsVisible = false;
                 }
 #endif
             });
@@ -262,27 +320,35 @@ namespace HololensGo
         }
 
         /// <summary>
-        /// Spawns a potato projectile in the direction of the user's gaze.
+        /// Spawns a potato projectile in the direction of the predicted gaze pose.
         /// </summary>
-        void DoThrow()
+        void DoThrow(SpatialPointerPose headPose)
         {
-            // Use current head position + gaze direction as throw origin
-            SpatialPointerPose headPose = SpatialPointerPose.TryGetAtTimestamp(
-                stationaryReferenceFrame.CoordinateSystem,
-                holographicSpace.CreateNextFrame().CurrentPrediction.Timestamp);
-
-            if (headPose == null) return;
+            if (headPose == null)
+            {
+                return;
+            }
 
             Vector3 hpos = headPose.Head.Position;
             Vector3 hdir = headPose.Head.ForwardDirection;
-            Vector3 velocity = hdir * 3.5f;
+            if (hdir.LengthSquared() < 0.0001f)
+            {
+                return;
+            }
 
-            potatoes.Add(new Potato
+            hdir = Vector3.Normalize(hdir);
+            Vector3 velocity = hdir * 3.5f;
+            bool wasAccepted = gameSession.TryThrow(new Potato
             {
                 Position = hpos + hdir * 0.1f,
                 Velocity = velocity,
                 Lifetime = 0f
             });
+
+            if (!wasAccepted)
+            {
+                Debug.WriteLine("Potato throw ignored because the active projectile budget is full.");
+            }
         }
 
         /// <summary>
@@ -302,7 +368,10 @@ namespace HololensGo
                 + gazeFlat * 1.5f
                 + new Vector3(0, -0.3f, 0);
 
-            mickeyRenderer.Position = mickeyWorldPos;
+            mickeyFloorHeight = mickeyWorldPos.Y;
+            gameSession.SpawnTarget(mickeyWorldPos);
+            mickeyRenderer.Position = gameSession.TargetPosition;
+            mickeyRenderer.IsVisible = true;
             mickeyPlaced = true;
         }
 
@@ -388,12 +457,13 @@ namespace HololensGo
                                 mickeyRenderer.Render();
                             }
 
-                            // Render each active potato projectile
-                            foreach (var p in potatoes)
+                            // Render each active potato projectile owned by the game session.
+                            for (int i = 0; i < gameSession.Potatoes.Count; i++)
                             {
-                                if (!p.HasCollided && potatoRenderer != null)
+                                Potato projectile = gameSession.Potatoes[i];
+                                if (!projectile.HasCollided && potatoRenderer != null)
                                 {
-                                    potatoRenderer.Draw(p);
+                                    potatoRenderer.Draw(projectile);
                                 }
                             }
                         }
@@ -436,15 +506,13 @@ namespace HololensGo
             switch (sender.Locatability)
             {
                 case SpatialLocatability.Unavailable:
-                    {
-                        string message = "Warning! Positional tracking is " + sender.Locatability + ".";
-                        Debug.WriteLine(message);
-                    }
-                    break;
-
                 case SpatialLocatability.PositionalTrackingActivating:
                 case SpatialLocatability.OrientationOnly:
                 case SpatialLocatability.PositionalTrackingInhibited:
+                    spatialTrackingActive = false;
+                    pointerPressed = false;
+                    latestHeadPose = null;
+                    Debug.WriteLine("Positional tracking is " + sender.Locatability + "; gameplay is paused.");
                     break;
 
                 case SpatialLocatability.PositionalTrackingActive:
@@ -484,27 +552,37 @@ namespace HololensGo
         void OnHolographicDisplayIsAvailableChanged(object sender, object args)
         {
             // Get the spatial locator for the default HolographicDisplay, if one is available.
-            SpatialLocator spatialLocator = null;
+            SpatialLocator nextSpatialLocator = null;
             if (canGetDefaultHolographicDisplay)
             {
                 HolographicDisplay defaultHolographicDisplay = HolographicDisplay.GetDefault();
                 if (defaultHolographicDisplay != null)
                 {
-                    spatialLocator = defaultHolographicDisplay.SpatialLocator;
+                    nextSpatialLocator = defaultHolographicDisplay.SpatialLocator;
                 }
             }
             else
             {
-                spatialLocator = SpatialLocator.GetDefault();
+                nextSpatialLocator = SpatialLocator.GetDefault();
+            }
+
+            if (spatialLocator != nextSpatialLocator)
+            {
+                if (spatialLocator != null)
+                {
+                    spatialLocator.LocatabilityChanged -= this.OnLocatabilityChanged;
+                }
+
+                spatialLocator = nextSpatialLocator;
+                if (spatialLocator != null)
+                {
+                    spatialLocator.LocatabilityChanged += this.OnLocatabilityChanged;
+                }
             }
 
             if (spatialLocator != null)
             {
-                // Respond to changes in the positional tracking state.
-                spatialLocator.LocatabilityChanged += this.OnLocatabilityChanged;
-
-                // The simplest way to render world-locked holograms is to create a stationary
-                // reference frame based on a SpatialLocator. This is roughly analogous to creating
+                // The simplest way to render world-locked holograms is to create
                 // a "world" coordinate system with the origin placed at the device's position
                 // as the app is launched.
                 stationaryReferenceFrame = spatialLocator.CreateStationaryFrameOfReferenceAtCurrentLocation();

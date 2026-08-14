@@ -58,6 +58,7 @@
     <Compile Include="Content\SpatialInputHandler.cs" />
     <Compile Include="Content\MickeyRenderer.cs" />
     <Compile Include="Content\PotatoRenderer.cs" />
+    <Compile Include="Models\GameSession.cs" />
     <Compile Include="Models\Potato.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

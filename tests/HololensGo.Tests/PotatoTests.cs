@@ -51,6 +51,37 @@ public class PotatoTests
     }
 
     [TestMethod]
+    public void Tick_AdvancesProjectileSpinUsingTravelSpeed()
+    {
+        var potato = new Potato
+        {
+            Velocity = new Vector3(0f, 10f, 0f)
+        };
+
+        potato.Tick(0.25f);
+
+        Assert.IsTrue(potato.SpinRadians > 0f);
+        Assert.IsTrue(potato.SpinRadians < 6.2831853f);
+    }
+
+    [TestMethod]
+    public void Tick_WrapsSpinAtTheExactFullTurnBoundary()
+    {
+        const float FullTurn = 6.2831853f;
+        const float dt = 0.1f;
+        var potato = new Potato
+        {
+            // This exactly cancels Tick's gravity update, producing zero additional spin.
+            Velocity = new Vector3(0f, 9.81f * dt, 0f),
+            SpinRadians = FullTurn
+        };
+
+        potato.Tick(dt);
+
+        Assert.AreEqual(0f, potato.SpinRadians, 0.0001f);
+    }
+
+    [TestMethod]
     public void HasExpired_IsTrueOnlyWhenLifetimeGreaterThanFive()
     {
         var potato = new Potato { Lifetime = 5.0f };

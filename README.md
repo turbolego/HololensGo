@@ -18,8 +18,9 @@ Put on the HoloLens and launch the app:
 
 1. **Room scan** — The HoloLens scans your environment using spatial mapping
 2. **Mickey appears** — After ~3 seconds, Steamboat Willie Mickey Mouse spawns ~1.5m in front of you, floating at floor level
-3. **Throw potatoes!** — Perform an air-tap (pinch gesture) or click your clicker remote to launch a potato in the direction you're looking
-4. **Hit Mickey** — When a potato hits him, he does a shake animation. Miss? The potato bounces and disappears after 5 seconds
+3. **Throw potatoes!** — Perform an air-tap (pinch gesture), click your clicker remote, or use a connected controller to launch a potato in the direction you're looking
+4. **Hit Mickey** — Mickey drifts and bobs within the encounter area. A successful hit triggers a shake-and-pulse reaction, advances your combo, and starts a short respawn interval
+5. **Recover from misses** — Potatoes follow ballistic physics, bounce off the encounter floor with damping, and expire after five seconds. A miss resets the active combo
 
 Both Mickey and the potatoes are procedurally generated 3D models — no external OBJ/FBX assets required.
 
@@ -32,10 +33,12 @@ Both Mickey and the potatoes are procedurally generated 3D models — no externa
 | **Spatial tracking** | HoloLens creates a stationary reference frame at the user's startup position |
 | **Mickey placement** | After 3 seconds, Mickey appears 1.5m in front of the user on the floor plane |
 | **Gesture input** | `SpatialInteractionManager` detects air-taps (hand gestures) and clicker remote presses |
-| **Projectile physics** | Each potato follows ballistic physics with gravity (-9.81 m/s²), velocity 3.5 m/s along gaze direction |
-| **Collision detection** | Bounding sphere check (0.15m radius) each frame between each potato and Mickey's position |
-| **Hit feedback** | On collision, Mickey vibrates for 0.3 seconds via a sinusoidal offset |
-| **Rendering** | Direct3D 11 holographic pipeline draws Mickey (procedural geometry) and each active potato |
+| **Projectile launch** | Each throw begins 0.1m ahead of the gaze origin at 3.5m/s, with a ten-potato active-projectile budget |
+| **Game session** | A renderer-independent `GameSession` owns score, combo, projectile budget, target respawn, and deterministic fixed-step simulation |
+| **Collision detection** | Swept segment-versus-sphere check (0.15m target radius) prevents fast potatoes from skipping through Mickey |
+| **Projectile physics** | Semi-implicit gravity, floor bounce/restitution, lateral friction, damping, lifetime/range cleanup, and trajectory-driven spin |
+| **Target behavior** | Mickey drifts and bobs during each encounter; a hit triggers shake-and-pulse feedback before a gaze-relative respawn |
+| **Rendering** | Direct3D 11 holographic pipeline draws Mickey (procedural geometry) and each active, spinning potato |
 
 ### Mickey's Model
 
@@ -70,7 +73,10 @@ HololensGo/
 │   ├── ShaderStructures.cs     # Vertex/constant buffer structs
 │   └── Shaders/                # HLSL shaders
 ├── Models/
-│   └── Potato.cs               # Potato projectile with physics
+│   ├── GameSession.cs          # Deterministic gameplay rules, scoring, collisions, and respawns
+│   └── Potato.cs               # Potato projectile with physics and spin state
+├── tests/                      # Portable unit tests for projectile and session rules
+├── ITERATIONS.md               # 100-cycle gameplay iteration register
 ├── privacy/
 │   └── index.html              # Privacy policy (served via GitHub Pages)
 ├── properties/
@@ -176,6 +182,10 @@ powershell -ExecutionPolicy Bypass -File .\deploy.ps1
 ```
 
 ---
+
+## Gameplay Iteration Record
+
+The current gameplay pass is documented in [`ITERATIONS.md`](ITERATIONS.md). It records one hundred focused design, implementation, and deterministic simulation cycles, with the portable rules covered by unit tests and a 100-update stability scenario.
 
 ## CI / CD
 

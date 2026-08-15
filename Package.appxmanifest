@@ -3,7 +3,8 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  IgnorableNamespaces="uap mp">
+  xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2"
+  IgnorableNamespaces="uap uap2 mp">
 
   <Identity Name="Turbolego.HololensGo"
             Publisher="CN=BB1A7F2A-A87C-44C8-8C14-84C6486E7E75"
@@ -47,6 +48,7 @@
 
   <Capabilities>
     <Capability Name="internetClient" />
+    <uap2:Capability Name="spatialPerception" />
     <DeviceCapability Name="webcam" />
     <DeviceCapability Name="microphone" />
   </Capabilities>

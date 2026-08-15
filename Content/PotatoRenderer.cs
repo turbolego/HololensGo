@@ -161,8 +161,9 @@ namespace HololensGo.Content
 
             var ctx = deviceResources.D3DDeviceContext;
 
-            // Compute model matrix: scale (potato size), translate to world position
+            // Compute model matrix: scale, trajectory-driven spin, then world translation.
             var m = Matrix4x4.CreateScale(PotatoScale)
+                    * Matrix4x4.CreateFromYawPitchRoll(proj.SpinRadians, proj.SpinRadians * 0.5f, 0f)
                     * Matrix4x4.CreateTranslation(proj.Position);
             modelCB.model = Matrix4x4.Transpose(m);
             ctx.UpdateSubresource(ref modelCB, modelConstantBuffer);

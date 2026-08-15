@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Models\GameSession.cs" Link="Models\GameSession.cs" />
     <Compile Include="..\..\Models\Potato.cs" Link="Models\Potato.cs" />
   </ItemGroup>
 </Project>

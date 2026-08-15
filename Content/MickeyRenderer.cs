@@ -39,9 +39,14 @@ namespace HololensGo.Content
         /// <summary>Uniform scale factor (0.15 = ~80 cm tall).</summary>
         public float Scale { get; set; } = 0.15f;
 
-        /// <summary>Set true when hit by a potato — triggers a simple shake animation.</summary>
+        /// <summary>Set true when hit by a potato — triggers a short reaction animation.</summary>
         public bool IsHit { get; set; } = false;
+
+        /// <summary>Controls whether the target is drawn while waiting to respawn.</summary>
+        public bool IsVisible { get; set; } = true;
+
         private float hitAnimTimer = 0f;
+        private float idleAnimationTime = 0f;
 
         public MickeyRenderer(DeviceResources deviceResources)
         {
@@ -189,32 +194,60 @@ namespace HololensGo.Content
         }
 
         /// <summary>
-        /// Renders Mickey into the scene using indexed instanced drawing (stereo).
+        /// Advances renderer-owned animation clocks. Keeping this separate from Render makes
+        /// movement consistent when the device's render cadence changes.
         /// </summary>
-        public void Render()
+        public void Update(float elapsedSeconds)
         {
-            if (!loaded)
+            if (elapsedSeconds <= 0f)
+            {
                 return;
+            }
 
-            var ctx = deviceResources.D3DDeviceContext;
+            float clampedElapsedSeconds = Math.Min(elapsedSeconds, 0.1f);
+            idleAnimationTime += clampedElapsedSeconds;
 
-            // Handle hit animation (simple offset vibration)
             if (IsHit)
             {
                 hitAnimTimer = 0.3f;
                 IsHit = false;
             }
-            float vibrate = 0;
-            if (hitAnimTimer > 0)
+
+            hitAnimTimer = Math.Max(0f, hitAnimTimer - clampedElapsedSeconds);
+        }
+
+        /// <summary>
+        /// Queues a hit reaction for the next animation update.
+        /// </summary>
+        public void TriggerHit()
+        {
+            IsHit = true;
+        }
+
+        /// <summary>
+        /// Renders Mickey into the scene using indexed instanced drawing (stereo).
+        /// </summary>
+        public void Render()
+        {
+            // Keep the model visible for the short hit reaction even after gameplay
+            // has marked the target unavailable for scoring.
+            if (!loaded || (!IsVisible && hitAnimTimer <= 0f))
+                return;
+
+            var ctx = deviceResources.D3DDeviceContext;
+
+            float vibrate = 0f;
+            if (hitAnimTimer > 0f)
             {
                 float t = hitAnimTimer / 0.3f;
-                vibrate = (float)Math.Sin(t * 30) * 0.03f * t;
-                hitAnimTimer = Math.Max(0, hitAnimTimer - 0.016f);
+                vibrate = Sin(t * 30f) * 0.03f * t;
             }
 
-            var animPos = Position + new Vector3(vibrate, 0, 0);
+            float bob = Sin(idleAnimationTime * 2.4f) * 0.0125f;
+            float hitPulse = hitAnimTimer > 0f ? 1f + (0.08f * (hitAnimTimer / 0.3f)) : 1f;
+            var animPos = Position + new Vector3(vibrate, bob, 0f);
 
-            var m = Matrix4x4.CreateScale(Scale)
+            var m = Matrix4x4.CreateScale(Scale * hitPulse)
                     * Matrix4x4.CreateTranslation(animPos);
             modelCB.model = Matrix4x4.Transpose(m);
             ctx.UpdateSubresource(ref modelCB, modelConstantBuffer);

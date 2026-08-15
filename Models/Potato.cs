@@ -12,8 +12,11 @@ namespace HololensGo.Models
 
         public void Tick(float dt)
         {
-            Velocity.Y -= 9.81f * dt;
-            Position += Velocity * dt;
+            // Vector3 is a struct; mutate via local copy, then assign back.
+            var velocity = Velocity;
+            velocity.Y -= 9.81f * dt;
+            Velocity = velocity;
+            Position += velocity * dt;
             Lifetime += dt;
         }
     }

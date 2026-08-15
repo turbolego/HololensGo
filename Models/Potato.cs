@@ -31,7 +31,7 @@ namespace HololensGo.Models
             Velocity = velocity;
             Position += velocity * elapsedSeconds;
             SpinRadians += velocity.Length() * elapsedSeconds * 4f;
-            if (SpinRadians > 6.2831853f)
+            if (SpinRadians >= 6.2831853f)
             {
                 SpinRadians %= 6.2831853f;
             }

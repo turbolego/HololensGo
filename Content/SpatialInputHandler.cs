@@ -2,17 +2,16 @@ using Windows.UI.Input.Spatial;
 
 namespace HololensGo.Common
 {
-    // Sample gesture handler.
-    // Hooks up events to recognize a tap gesture, and keeps track of input using a boolean value.
+    // Gesture handler that queues the latest spatial press for consumption by the game loop.
     public class SpatialInputHandler : System.IDisposable
     {
         // API objects used to process gesture input, and generate gesture events.
         private SpatialInteractionManager interactionManager;
 
-        // Used to indicate that a Pressed input event was received this frame.
+        // Holds the latest press received since the game loop last consumed input.
         private SpatialInteractionSourceState sourceState;
 
-        // Creates and initializes a GestureRecognizer that listens to a Person.
+        // Creates and initializes the spatial interaction listener for the current view.
         public SpatialInputHandler()
         {
             // The interaction manager provides an event that informs the app when

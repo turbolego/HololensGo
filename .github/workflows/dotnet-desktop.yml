@@ -77,7 +77,7 @@ jobs:
 
       - name: Upload appx artifact
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: HololensGo-${{ github.sha }}-Release-x86
           path: |

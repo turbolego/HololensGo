@@ -39,6 +39,7 @@ namespace HololensGo
 
         // Spawns a procedural potato mesh to render active projectiles
         private PotatoRenderer potatoRenderer;
+        private ScoreHudRenderer scoreHudRenderer;
 
         // Renderer-independent rules, scoring, projectile simulation, and respawns.
         private readonly GameSession gameSession = new GameSession
@@ -135,6 +136,7 @@ namespace HololensGo
             // Do not show the target at the stationary-frame origin before the spawn delay.
             mickeyRenderer.IsVisible = false;
             potatoRenderer = new PotatoRenderer(deviceResources);
+            scoreHudRenderer = new ScoreHudRenderer(deviceResources);
 #endif
 
             if (canGetDefaultHolographicDisplay)
@@ -187,6 +189,11 @@ namespace HololensGo
             {
                 potatoRenderer.Dispose();
                 potatoRenderer = null;
+            }
+            if (scoreHudRenderer != null)
+            {
+                scoreHudRenderer.Dispose();
+                scoreHudRenderer = null;
             }
 #endif
         }
@@ -466,6 +473,16 @@ namespace HololensGo
                                     potatoRenderer.Draw(projectile);
                                 }
                             }
+
+                            if (mickeyPlaced && latestHeadPose != null && scoreHudRenderer != null)
+                            {
+                                scoreHudRenderer.Render(
+                                    gameSession.Score,
+                                    gameSession.Combo,
+                                    mickeyWorldPos + new Vector3(0f, 0.28f, 0f),
+                                    latestHeadPose.Head.Position,
+                                    latestHeadPose.Head.ForwardDirection);
+                            }
                         }
 #endif
                         atLeastOneCameraRendered = true;
@@ -490,6 +507,7 @@ namespace HololensGo
 #if DRAW_SAMPLE_CONTENT
             mickeyRenderer?.ReleaseDeviceDependentResources();
             potatoRenderer?.ReleaseDeviceDependentResources();
+            scoreHudRenderer?.ReleaseDeviceDependentResources();
 #endif
         }
 
@@ -498,6 +516,7 @@ namespace HololensGo
 #if DRAW_SAMPLE_CONTENT
             mickeyRenderer?.CreateDeviceDependentResourcesAsync();
             potatoRenderer?.CreateDeviceDependentResourcesAsync();
+            scoreHudRenderer?.CreateDeviceDependentResourcesAsync();
 #endif
         }
 

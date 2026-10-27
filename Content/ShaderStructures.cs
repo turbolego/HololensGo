@@ -46,6 +46,22 @@ namespace HololensGo.Content
     }
 
     /// <summary>
+    /// Vertex with position and UV for textured 3D models (GLB/GLTF).
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct VertexPositionUV
+    {
+        public Vector3 pos;
+        public Vector2 uv;
+
+        public VertexPositionUV(Vector3 pos, Vector2 uv)
+        {
+            this.pos = pos;
+            this.uv = uv;
+        }
+    }
+
+    /// <summary>
     /// Simple UV quad for the glyph atlas (retained for reusable text rendering).
     /// </summary>
     internal struct UvRect

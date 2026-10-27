@@ -22,7 +22,7 @@ Put on the HoloLens and launch the app:
 4. **Hit Mickey** — Mickey drifts and bobs within the encounter area. A successful hit triggers a shake-and-pulse reaction, advances your combo, and starts a short respawn interval
 5. **Recover from misses** — Potatoes follow ballistic physics, bounce off the encounter floor with damping, and expire after five seconds. A miss resets the active combo
 
-Both Mickey and the potatoes are procedurally generated 3D models — no external OBJ/FBX assets required.
+Mickey is loaded from the included textured GLB asset. Potatoes are procedurally generated. The GLB is parsed with built-in UWP storage, JSON, and imaging APIs; no glTF runtime package is added.
 
 ---
 
@@ -37,21 +37,12 @@ Both Mickey and the potatoes are procedurally generated 3D models — no externa
 | **Game session** | A renderer-independent `GameSession` owns score, combo, projectile budget, target respawn, and deterministic fixed-step simulation |
 | **Collision detection** | Swept segment-versus-sphere check (0.15m target radius) prevents fast potatoes from skipping through Mickey |
 | **Projectile physics** | Semi-implicit gravity, floor bounce/restitution, lateral friction, damping, lifetime/range cleanup, and trajectory-driven spin |
-| **Target behavior** | Mickey drifts and bobs during each encounter; a hit triggers shake-and-pulse feedback before a gaze-relative respawn |
-| **Rendering** | Direct3D 11 holographic pipeline draws Mickey (procedural geometry) and each active, spinning potato |
+| **Target behavior** | Mickey drifts and bobs during each encounter; a hit triggers shake-and-pulse feedback before a gaze-relative respawn. Score and combo appear in a head-facing readout above the target. |
+| **Rendering** | Direct3D 11 holographic pipeline draws the textured GLB model, score/combo readout, and each active, spinning potato |
 
 ### Mickey's Model
 
-Built entirely from code — no 3D assets. ~15 body parts constructed from primitives:
-
-- **Head** — sphere + 2 ear spheres
-- **Face** — skin-coloured disc, white eyes, black pupils, nose, red mouth
-- **Body** — red rounded box with 2 white buttons
-- **Limbs** — black cylinders for arms, red cylinders for legs, skin-coloured hand spheres
-- **Shoes** — brown boxes
-- **Tail** — black cylinder
-- **Hat** — blue captain's hat with white brim
-- **Steamboat wheel** — grey ring around his waist
+Mickey uses the packaged CC-BY-4.0 model asset, loaded by `GlbLoader` through Windows UWP APIs and rendered with its per-primitive material textures. Source textures are decoded to at most 1024×1024, and temporary bitmap resources are released after upload. Potatoes use procedural geometry. Neither path adds a runtime model-loading dependency.
 
 ---
 
@@ -63,11 +54,13 @@ HololensGo/
 │   ├── dotnet.yml              # CI compile check (Debug + Release)
 │   ├── dotnet-desktop.yml      # Signed .appxupload artifact on push
 │   └── store-submission.yml    # Full Store pipeline: build, package, submit
-├── Assets/                     # PNG logos/splash at required sizes
+├── Assets/                     # PNG logos/splash and the credited Mickey GLB model
 ├── Common/
 │   └── DeviceResources.cs      # Direct3D device management
 ├── Content/
-│   ├── MickeyRenderer.cs       # Procedural Steamboat Willie rendering
+│   ├── MickeyRenderer.cs       # Textured Steamboat Willie GLB rendering
+│   ├── GlbLoader.cs            # Loads the packaged GLB using built-in UWP APIs
+│   ├── ScoreHudRenderer.cs     # World-locked score and combo readout
 │   ├── PotatoRenderer.cs       # Brown ellipsoid potato rendering
 │   ├── SpatialInputHandler.cs  # Gesture/clicker input
 │   ├── ShaderStructures.cs     # Vertex/constant buffer structs
@@ -76,7 +69,7 @@ HololensGo/
 │   ├── GameSession.cs          # Deterministic gameplay rules, scoring, collisions, and respawns
 │   └── Potato.cs               # Potato projectile with physics and spin state
 ├── tests/                      # Portable unit tests for projectile and session rules
-├── ITERATIONS.md               # 100-cycle gameplay iteration register
+├── ITERATIONS.md               # Gameplay iteration register
 ├── privacy/
 │   └── index.html              # Privacy policy (served via GitHub Pages)
 ├── properties/
@@ -185,7 +178,7 @@ powershell -ExecutionPolicy Bypass -File .\deploy.ps1
 
 ## Gameplay Iteration Record
 
-The current gameplay pass is documented in [`ITERATIONS.md`](ITERATIONS.md). It records one hundred focused design, implementation, and deterministic simulation cycles, with the portable rules covered by unit tests and a 100-update stability scenario.
+The current gameplay pass is documented in [`ITERATIONS.md`](ITERATIONS.md). It tracks gameplay implementation and validation cycles, with portable rules covered by unit tests and a 100-update stability scenario.
 
 ## CI / CD
 

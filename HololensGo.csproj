@@ -57,6 +57,8 @@
     <Compile Include="Content\ShaderStructures.cs" />
     <Compile Include="Content\SpatialInputHandler.cs" />
     <Compile Include="Content\MickeyRenderer.cs" />
+    <Compile Include="Content\ScoreHudRenderer.cs" />
+    <Compile Include="Content\GlbLoader.cs" />
     <Compile Include="Content\PotatoRenderer.cs" />
     <Compile Include="Models\GameSession.cs" />
     <Compile Include="Models\Potato.cs" />
@@ -69,6 +71,7 @@
     <Content Include="Assets\Square44x44Logo.png" />
     <Content Include="Assets\SplashScreen.png" />
     <Content Include="Assets\Wide310x150Logo.png" />
+    <Content Include="Assets\3dmodels\mickey-mouse-steamboat-willie-model\source\Steamboat Willie Modelo.glb" />
   </ItemGroup>
 
   <ItemGroup>
@@ -83,11 +86,16 @@
 
   <ItemGroup>
     <GeometryShader Include="Content\Shaders\GeometryShader.hlsl" />
+    <GeometryShader Include="Content\Shaders\ModelGeometryShader.hlsl" />
     <GeometryShader Include="Content\Shaders\TextGeometryShader.hlsl" />
+    <PixelShader Include="Content\Shaders\ModelPixelShader.hlsl" />
     <PixelShader Include="Content\Shaders\PixelShader.hlsl" />
     <PixelShader Include="Content\Shaders\TextPixelShader.hlsl" />
+    <None Include="Content\Shaders\ModelVertexShaderShared.hlsl" />
     <None Include="Content\Shaders\VertexShaderShared.hlsl" />
     <None Include="Content\Shaders\TextVertexShaderShared.hlsl" />
+    <VertexShader Include="Content\Shaders\ModelVertexShader.hlsl" />
+    <VertexShader Include="Content\Shaders\ModelVPRTVertexShader.hlsl" />
     <VertexShader Include="Content\Shaders\VertexShader.hlsl" />
     <VertexShader Include="Content\Shaders\VPRTVertexShader.hlsl" />
     <VertexShader Include="Content\Shaders\TextVertexShader.hlsl" />

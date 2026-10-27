@@ -1,6 +1,6 @@
-# HololensGo: 100-Cycle Iteration Register
+# HololensGo: Gameplay Iteration Register
 
-This register documents the focused development and validation cycles completed in the current gameplay pass. A cycle is a discrete design decision, implementation check, or deterministic simulation step; it is **not** a promise of 100 unrelated commits. Cycles 81–100 are backed by the 100-step stability simulation in `GameSessionTests` and the standalone validation harness.
+This register documents focused development and validation cycles completed in the current gameplay pass. A cycle is a discrete design decision, implementation check, or deterministic simulation step; it is **not** a promise of unrelated commits. Cycles 81–100 summarize the steps in one deterministic 100-update stability test, not twenty separately validated features.
 
 | Cycle | Focus | Outcome |
 |---:|---|---|
@@ -104,9 +104,16 @@ This register documents the focused development and validation cycles completed 
 | 98 | Simulation step 18 | Maintained finite projectile state. |
 | 99 | Simulation step 19 | Maintained finite projectile state. |
 | 100 | Simulation step 20 | Completed a 100-update deterministic stability pass. |
+| 101 | Trim render hot-path diagnostics | Removed per-frame debug output to avoid unnecessary work on HoloLens 1 hardware. |
+| 102 | Align model documentation | Documented the packaged textured GLB and confirmed the loader uses built-in UWP APIs without a glTF runtime dependency. |
+| 103 | Enforce fixed simulation steps | Accumulated fractional frame time and simulated only complete 60 Hz steps for frame-partition-independent projectile motion. |
+| 104 | Preserve hits during same-frame respawn | Avoided gaze repositioning when a newly respawned target is hit again in the same update. |
+| 105 | Respect GLB material assignments | Rendered each primitive with its own material texture and capped decoded textures at 1024 pixels per dimension for HoloLens 1 memory use. |
+| 106 | Release temporary decode resources | Disposed each decoded `SoftwareBitmap` and in-memory stream immediately after copying texture pixels. |
+| 107 | Show score and combo in-world | Added a world-locked stereo HUD using the existing text shaders and a procedural glyph atlas, with no added runtime dependency. |
 
-> The final twenty rows summarize the final twenty updates of a 100-update loop; the complete loop is executable in the test suite and validation harness. The game logic checks all 100 update cycles for elapsed-time correctness and finite projectile coordinates.
+> Cycles 81–100 summarize updates from a 100-step deterministic stability test. The complete loop is executable in `GameSessionTests`; it checks elapsed-time accounting and finite projectile coordinates.
 
 ## Validation Boundary
 
-The repository’s UWP application must be compiled on Windows with the UWP workload. The portable `Models` layer is independently compiled and exercised in this Linux workspace; the CI workflow remains the authoritative full UWP build validation.
+The UWP application is compiled for x86 on Windows with the UWP workload. The portable `Models` layer is independently tested with the .NET 8 test project. A successful build does not replace physical HoloLens 1 validation of rendering performance, spatial tracking, and interaction.

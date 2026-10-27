@@ -136,8 +136,7 @@ namespace HololensGo.Content
                 UpdateTextGeometry(text);
 
             var context = deviceResources.D3DDeviceContext;
-            Matrix4x4 billboard = Matrix4x4.CreateBillboard(
-                worldPosition, cameraPosition, Vector3.UnitY, cameraForward);
+            Matrix4x4 billboard = CreateBillboard(worldPosition, cameraPosition, cameraForward);
             modelCB.model = Matrix4x4.Transpose(billboard);
             context.UpdateSubresource(ref modelCB, modelConstantBuffer);
 
@@ -157,6 +156,28 @@ namespace HololensGo.Content
             context.PixelShader.SetShaderResource(0, glyphTextureView);
             context.PixelShader.SetSampler(0, glyphSampler);
             context.DrawIndexedInstanced(indexCount, 2, 0, 0, 0);
+        }
+
+        private static Matrix4x4 CreateBillboard(Vector3 worldPosition, Vector3 cameraPosition, Vector3 cameraForward)
+        {
+            Vector3 facing = cameraPosition - worldPosition;
+            if (facing.LengthSquared() < 0.000001f)
+                facing = cameraForward.LengthSquared() < 0.000001f ? Vector3.UnitZ : -Vector3.Normalize(cameraForward);
+            else
+                facing = Vector3.Normalize(facing);
+
+            Vector3 right = Vector3.Cross(Vector3.UnitY, facing);
+            if (right.LengthSquared() < 0.000001f)
+                right = Vector3.UnitX;
+            else
+                right = Vector3.Normalize(right);
+
+            Vector3 up = Vector3.Normalize(Vector3.Cross(facing, right));
+            return new Matrix4x4(
+                right.X, right.Y, right.Z, 0f,
+                up.X, up.Y, up.Z, 0f,
+                facing.X, facing.Y, facing.Z, 0f,
+                worldPosition.X, worldPosition.Y, worldPosition.Z, 1f);
         }
 
         private void CreateGlyphTexture()

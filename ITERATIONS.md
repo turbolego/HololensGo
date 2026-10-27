@@ -111,6 +111,7 @@ This register documents focused development and validation cycles completed in t
 | 105 | Respect GLB material assignments | Rendered each primitive with its own material texture and capped decoded textures at 1024 pixels per dimension for HoloLens 1 memory use. |
 | 106 | Release temporary decode resources | Disposed each decoded `SoftwareBitmap` and in-memory stream immediately after copying texture pixels. |
 | 107 | Show score and combo in-world | Added a world-locked stereo HUD using the existing text shaders and a procedural glyph atlas, with no added runtime dependency. |
+| 108 | Correct HUD billboard basis | Kept the score readout facing the viewer and readable without mirrored text or back-face culling. |
 
 > Cycles 81–100 summarize updates from a 100-step deterministic stability test. The complete loop is executable in `GameSessionTests`; it checks elapsed-time accounting and finite projectile coordinates.
 

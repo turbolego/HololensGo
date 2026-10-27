@@ -274,7 +274,7 @@ namespace HololensGo
                         }
                     }
 
-                    if (updateResult.TargetRespawned && latestHeadPose != null)
+                    if (updateResult.TargetRespawned && gameSession.TargetVisible && latestHeadPose != null)
                     {
                         // Respawn against the player's latest gaze so the next throw begins
                         // as a fresh room-scale encounter instead of at a stale location.

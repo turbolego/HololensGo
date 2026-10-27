@@ -98,6 +98,26 @@ public class GameSessionTests
     }
 
     [TestMethod]
+    public void Update_CanReportRespawnAndHitInSameFrame()
+    {
+        var session = new GameSession { TargetRespawnDelaySeconds = 0.1f };
+        session.SpawnTarget(Vector3.Zero);
+        session.TryThrow(new Potato { Position = Vector3.Zero });
+        session.Update(GameSession.SimulationStepSeconds, WorldOrigin, 0f);
+        session.TryThrow(new Potato { Position = Vector3.Zero });
+
+        GameUpdateResult result = session.Update(
+            GameSession.SimulationStepSeconds * 7f,
+            WorldOrigin,
+            0f);
+
+        Assert.IsTrue(result.TargetRespawned);
+        Assert.IsTrue(result.TargetHit);
+        Assert.IsFalse(session.TargetVisible);
+        Assert.AreEqual(2, session.Hits);
+    }
+
+    [TestMethod]
     public void Update_ConsecutiveHitsIncreaseComboAndScore()
     {
         var session = new GameSession { TargetRespawnDelaySeconds = 0.1f };
@@ -159,7 +179,7 @@ public class GameSessionTests
         };
         session.TryThrow(potato);
 
-        session.Update(0.01f, WorldOrigin, 0f);
+        session.Update(GameSession.SimulationStepSeconds, WorldOrigin, 0f);
 
         Assert.AreEqual(0f, potato.Position.Y, 0.0001f);
         Assert.IsTrue(potato.Velocity.Y > 0f);
@@ -179,7 +199,7 @@ public class GameSessionTests
         };
         session.TryThrow(potato);
 
-        session.Update(0.01f, WorldOrigin, 0f);
+        session.Update(GameSession.SimulationStepSeconds, WorldOrigin, 0f);
 
         Assert.AreEqual(0f, potato.Velocity.Y, 0.0001f);
     }
@@ -208,6 +228,25 @@ public class GameSessionTests
 
         Assert.AreEqual(GameSession.MaximumFrameSeconds, session.ElapsedSeconds, 0.0001f);
         Assert.IsTrue(session.Potatoes[0].Lifetime <= GameSession.MaximumFrameSeconds + 0.0001f);
+    }
+
+    [TestMethod]
+    public void Update_ProducesConsistentProjectileMotionAcrossFramePartitions()
+    {
+        var singleFrameSession = new GameSession();
+        var partitionedSession = new GameSession();
+        var singleFramePotato = CreatePotato();
+        var partitionedPotato = CreatePotato();
+        singleFrameSession.TryThrow(singleFramePotato);
+        partitionedSession.TryThrow(partitionedPotato);
+        float frameDuration = GameSession.SimulationStepSeconds * 1.25f;
+
+        singleFrameSession.Update(frameDuration * 2f, WorldOrigin, 0f);
+        partitionedSession.Update(frameDuration, WorldOrigin, 0f);
+        partitionedSession.Update(frameDuration, WorldOrigin, 0f);
+
+        Assert.AreEqual(singleFramePotato.Position.Y, partitionedPotato.Position.Y, 0.00001f);
+        Assert.AreEqual(singleFramePotato.Velocity.Y, partitionedPotato.Velocity.Y, 0.00001f);
     }
 
     [TestMethod]
@@ -247,6 +286,23 @@ public class GameSessionTests
         Assert.AreEqual(0, session.Combo);
         Assert.AreEqual(0, session.BestCombo);
         Assert.AreEqual(0f, session.ElapsedSeconds, 0.0001f);
+    }
+
+    [TestMethod]
+    public void Reset_ClearsAccumulatedPartialSimulationTime()
+    {
+        var session = new GameSession();
+        session.TryThrow(CreatePotato());
+        session.Update(GameSession.SimulationStepSeconds * 0.5f, WorldOrigin, 0f);
+
+        session.Reset();
+        var potato = CreatePotato();
+        session.TryThrow(potato);
+        session.Update(GameSession.SimulationStepSeconds * 0.5f, WorldOrigin, 0f);
+
+        Assert.AreEqual(0f, potato.Lifetime, 0.000001f);
+        session.Update(GameSession.SimulationStepSeconds * 0.5f, WorldOrigin, 0f);
+        Assert.AreEqual(GameSession.SimulationStepSeconds, potato.Lifetime, 0.000001f);
     }
 
     [TestMethod]

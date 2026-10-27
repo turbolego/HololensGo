@@ -23,6 +23,7 @@ namespace HololensGo.Models
         private Vector3 targetSpawnPosition;
         private float targetRespawnRemaining;
         private float targetMotionTime;
+        private double simulationAccumulator;
 
         public IReadOnlyList<Potato> Potatoes => potatoes;
         public Vector3 TargetPosition { get; private set; }
@@ -65,6 +66,7 @@ namespace HololensGo.Models
             TargetVisible = false;
             targetRespawnRemaining = 0f;
             targetMotionTime = 0f;
+            simulationAccumulator = 0.0;
             Score = 0;
             Hits = 0;
             Misses = 0;
@@ -99,15 +101,15 @@ namespace HololensGo.Models
                 return result;
             }
 
-            float remaining = Math.Min(elapsedSeconds, MaximumFrameSeconds);
-            while (remaining > 0f)
+            float acceptedSeconds = Math.Min(elapsedSeconds, MaximumFrameSeconds);
+            simulationAccumulator += acceptedSeconds;
+            while (simulationAccumulator + 0.000001 >= SimulationStepSeconds)
             {
-                float step = Math.Min(remaining, SimulationStepSeconds);
-                SimulateStep(step, worldOrigin, floorHeight, result);
-                remaining -= step;
+                SimulateStep(SimulationStepSeconds, worldOrigin, floorHeight, result);
+                simulationAccumulator = Math.Max(0.0, simulationAccumulator - SimulationStepSeconds);
             }
 
-            ElapsedSeconds += Math.Min(elapsedSeconds, MaximumFrameSeconds);
+            ElapsedSeconds += acceptedSeconds;
             return result;
         }
 

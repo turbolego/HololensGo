@@ -98,6 +98,9 @@ namespace HololensGo
         private bool mickeyPlaced = false;
         private float timeSinceStart = 0f;
         private const float SECONDS_BEFORE_SPAWN = 3.0f;
+        // Fallback: activate tracking after this many seconds if Perception Simulation never connects (emulator).
+        private float trackingFallbackTimer = 0f;
+        private const float TRACKING_FALLBACK_SECONDS = 5.0f;
 
         public HololensGoMain(DeviceResources deviceResources)
         {
@@ -255,6 +258,16 @@ namespace HololensGo
             {
 #if DRAW_SAMPLE_CONTENT
                 // ── Game logic: time-based updates ──
+
+                // Force tracking active after timeout so the emulator works without Perception Simulation.
+                if (!spatialTrackingActive)
+                {
+                    trackingFallbackTimer += (float)timer.ElapsedSeconds;
+                    if (trackingFallbackTimer >= TRACKING_FALLBACK_SECONDS)
+                    {
+                        spatialTrackingActive = true;
+                    }
+                }
 
                 // Place Mickey after spatial tracking activates and delay elapses
                 if (spatialTrackingActive && !mickeyPlaced)
